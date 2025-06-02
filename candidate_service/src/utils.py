@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Any
 
+import httpx
 from passlib.context import CryptContext
 from jose import JWTError, jwt
+from fastapi import HTTPException, status
 
 from src.config import settings
 
@@ -47,3 +49,21 @@ def decode_access_token(token: str) -> dict:
         return payload
     except JWTError as e:
         raise e
+
+
+async def create_test_session(template_id: str,
+                              external_application_id: int) -> str:
+    url = f"{settings.TEST_SERVICE_URL}/templates/{template_id}/sessions"
+    payload = {"external_application_id": external_application_id}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=payload)
+            response.raise_for_status()
+            data = response.json()
+            return data["token"]
+    except httpx.HTTPError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Failed to create test session: {str(e)}"
+        )

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, Boolean, TIMESTAMP, ForeignKey, func
+from sqlalchemy import Column, Integer, Text, Boolean, DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from src.database import Base
@@ -22,15 +22,14 @@ class AnswerOption(Base):
     is_correct = Column(Boolean, nullable=False, default=False)
 
     created_at = Column(
-        TIMESTAMP(timezone=True),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False
     )
     updated_at = Column(
-        TIMESTAMP(timezone=True),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False
     )
 
-    # Обратная связь к Question
     question = relationship("Question", back_populates="answer_options")

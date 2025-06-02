@@ -29,6 +29,7 @@ services:
     ports:
       - "8001:8000"
     depends_on:
+      - test_db
       - candidate_db
 
   test_service:
@@ -40,3 +41,4 @@ services:
       - "8002:8000"
     depends_on:
       - test_db
+      - candidate_db

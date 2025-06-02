@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, TIMESTAMP, ForeignKey, func
+from sqlalchemy import Column, Integer, Text, ForeignKey, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from src.database import Base
@@ -21,19 +21,15 @@ class Question(Base):
     text = Column(Text, nullable=False)
 
     created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=func.now(),
-        nullable=False
+        DateTime(timezone=True),
+        server_default=func.now()
     )
     updated_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=func.now(),
-        nullable=False
+        DateTime(timezone=True),
+        server_default=func.now()
     )
 
-    # Обратная связь к TestTemplate
-    test_template = relationship("TestTemplate", back_populates="questions")
-    # Один вопрос может иметь несколько вариантов ответа
+    template = relationship("TestTemplate", back_populates="questions")
     answer_options = relationship(
         "AnswerOption",
         back_populates="question",
