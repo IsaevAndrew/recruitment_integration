@@ -1,74 +1,59 @@
-from sqlalchemy import Column, Numeric, String, ForeignKey, DateTime, Text, func
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+import uuid
+from datetime import datetime
+
+from sqlalchemy import ForeignKey, Integer, DateTime, func
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from src.database import Base
 
 
 class TestSession(Base):
-    __tablename__ = "test_session"
+    __tablename__ = "test_sessions"
 
-    id = Column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        server_default=func.gen_random_uuid()
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    test_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("test_template.id", ondelete="RESTRICT"),
-        nullable=False
+    template_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("test_templates.id", ondelete="CASCADE"),
+        nullable=False,
     )
-    external_application_id = Column(UUID(as_uuid=True), nullable=False)
-    token = Column(String, unique=True, nullable=False)
-
-    status = Column(String(20), nullable=False, default="created")
-    score = Column(Numeric(5, 2), nullable=True)
-
-    created_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False
+    candidate_email: Mapped[str] = mapped_column(nullable=False)
+    score: Mapped[int] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    started_at = Column(DateTime(timezone=True), nullable=True)
-    completed_at = Column(DateTime(timezone=True), nullable=True)
 
-    template = relationship("TestTemplate")
-    session_answers = relationship(
-        "SessionAnswer",
-        back_populates="session",
-        cascade="all, delete-orphan"
+    template = relationship("TestTemplate", back_populates="sessions")
+    answers = relationship(
+        "SessionAnswer", back_populates="session", cascade="all, delete-orphan"
     )
 
 
 class SessionAnswer(Base):
-    __tablename__ = "session_answer"
+    __tablename__ = "session_answers"
 
-    id = Column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        server_default=func.gen_random_uuid()
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    session_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("test_session.id", ondelete="CASCADE"),
-        nullable=False
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("test_sessions.id", ondelete="CASCADE"),
+        nullable=False,
     )
-    question_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("question.id", ondelete="RESTRICT"),
-        nullable=False
+    question_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("questions.id", ondelete="SET NULL"),
+        nullable=False,
     )
-    answer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("answer_option.id", ondelete="RESTRICT"),
-        nullable=False
+    answer_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("answer_options.id", ondelete="SET NULL"),
+        nullable=False,
     )
-    answered_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    session = relationship("TestSession", back_populates="session_answers")
-    question = relationship("Question")
-    answer_option = relationship("AnswerOption")
-
+    session = relationship("TestSession", back_populates="answers")

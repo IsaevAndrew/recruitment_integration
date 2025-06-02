@@ -1,43 +1,72 @@
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
-from src.sessions.schemas import TestSessionCreate, TestSessionRead, SessionAnswerCreate, SessionAnswerRead
+from uuid import UUID
+
+from src.sessions.schemas import (
+    SessionCreate,
+    SessionRead,
+    SessionAnswerCreate,
+    SessionAnswerRead,
+)
+from src.sessions.dependencies import get_session_service, valid_session_id
 from src.sessions.service import SessionService
 
-router = APIRouter(prefix="/templates/{template_id}/sessions", tags=["sessions"])
+router = APIRouter()
 
-@router.post("/", response_model=TestSessionRead, status_code=status.HTTP_201_CREATED)
-async def create_session(template_id: str, data: TestSessionCreate):
-    return await SessionService.create(template_id, data)
 
-@router.get("/", response_model=List[TestSessionRead])
-async def list_sessions(template_id: str, skip: int = 0, limit: int = 100):
-    return await SessionService.get_all(template_id, skip, limit)
+@router.post("/", response_model=SessionRead,
+             status_code=status.HTTP_201_CREATED)
+async def create_session(
+        data: SessionCreate,
+        service: SessionService = Depends(get_session_service),
+):
+    return await service.create_session(data)
 
-@router.get("/{session_id}", response_model=TestSessionRead)
-async def get_session(template_id: str, session_id: str):
-    session = await SessionService.get_by_id(template_id, session_id)
-    if not session:
-        raise HTTPException(404, "Session not found")
+
+@router.get("/{session_id}", response_model=SessionRead)
+async def read_session(session: dict = Depends(valid_session_id)):
     return session
 
-@router.put("/{session_id}", response_model=TestSessionRead)
-async def update_session(template_id: str, session_id: str, data: TestSessionRead):
-    updated = await SessionService.update(template_id, session_id, data)
+
+@router.get("/", response_model=List[SessionRead])
+async def list_sessions(
+        candidate_email: str,
+        limit: int = Query(default=10, ge=1),
+        offset: int = Query(default=0, ge=0),
+        service: SessionService = Depends(get_session_service),
+):
+    return await service.list_sessions(candidate_email=candidate_email,
+                                       limit=limit, offset=offset)
+
+
+@router.patch("/{session_id}/score", response_model=SessionRead)
+async def update_score(
+        session_id: UUID,
+        score: int = Query(..., ge=0, le=100),
+        service: SessionService = Depends(get_session_service),
+):
+    updated = await service.update_score(session_id, score)
     if not updated:
-        raise HTTPException(404, "Session not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Session not found")
     return updated
 
-@router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_session(template_id: str, session_id: str):
-    success = await SessionService.delete(template_id, session_id)
-    if not success:
-        raise HTTPException(404, "Session not found")
-    return None
 
-@router.post("/{session_id}/answers", response_model=SessionAnswerRead, status_code=status.HTTP_201_CREATED)
-async def create_session_answer(template_id: str, session_id: str, data: SessionAnswerCreate):
-    return await SessionService.create_answer(template_id, session_id, data)
+@router.post("/answers", response_model=SessionAnswerRead,
+             status_code=status.HTTP_201_CREATED)
+async def create_session_answer(
+        data: SessionAnswerCreate,
+        service: SessionService = Depends(get_session_service),
+):
+    return await service.create_answer(data)
+
 
 @router.get("/{session_id}/answers", response_model=List[SessionAnswerRead])
-async def list_session_answers(template_id: str, session_id: str, skip: int = 0, limit: int = 100):
-    return await SessionService.get_answers(template_id, session_id, skip, limit)
+async def list_session_answers(
+        session_id: UUID,
+        limit: int = Query(default=10, ge=1),
+        offset: int = Query(default=0, ge=0),
+        service: SessionService = Depends(get_session_service),
+):
+    return await service.list_answers_for_session(session_id=session_id,
+                                                  limit=limit, offset=offset)

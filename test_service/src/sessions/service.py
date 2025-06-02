@@ -1,112 +1,69 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import List, Optional
 from uuid import UUID
-from sqlalchemy import select
-from src.database import async_session
+
 from src.sessions.models import TestSession, SessionAnswer
-from src.sessions.schemas import TestSessionCreate, TestSessionRead, \
+from src.sessions.schemas import SessionCreate, SessionRead, \
     SessionAnswerCreate, SessionAnswerRead
-import secrets
 
 
 class SessionService:
-    @staticmethod
-    async def create(template_id: UUID,
-                     data: TestSessionCreate) -> TestSessionRead:
-        async with async_session() as db:
-            token = secrets.token_urlsafe(32)
-            session = TestSession(
-                test_id=template_id,
-                external_application_id=data.external_application_id,
-                token=token,
-                status="created"
-            )
-            db.add(session)
-            await db.commit()
-            await db.refresh(session)
-            return session
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
-    @staticmethod
-    async def get_all(template_id: UUID, skip: int = 0, limit: int = 100) -> \
-    List[TestSessionRead]:
-        async with async_session() as db:
-            result = await db.execute(
-                select(TestSession)
-                .where(TestSession.test_id == template_id)
-                .offset(skip)
-                .limit(limit)
-            )
-            return result.scalars().all()
+    async def create_session(self, data: SessionCreate) -> SessionRead:
+        new_item = TestSession(**data.model_dump(exclude_unset=True))
+        self.db.add(new_item)
+        await self.db.commit()
+        await self.db.refresh(new_item)
+        return SessionRead.model_validate(new_item)
 
-    @staticmethod
-    async def get_by_id(template_id: UUID, session_id: UUID) -> Optional[
-        TestSessionRead]:
-        async with async_session() as db:
-            result = await db.execute(
-                select(TestSession)
-                .where(TestSession.test_id == template_id)
-                .where(TestSession.id == session_id)
-            )
-            return result.scalar_one_or_none()
+    async def get_session(self, session_id: UUID) -> Optional[SessionRead]:
+        result = await self.db.execute(
+            select(TestSession).where(TestSession.id == session_id))
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        return SessionRead.model_validate(obj)
 
-    @staticmethod
-    async def get_by_token(token: str) -> Optional[TestSessionRead]:
-        async with async_session() as db:
-            result = await db.execute(
-                select(TestSession).where(TestSession.token == token)
-            )
-            return result.scalar_one_or_none()
+    async def list_sessions(
+            self, candidate_email: str, limit: int = 10, offset: int = 0
+    ) -> List[SessionRead]:
+        result = await self.db.execute(
+            select(TestSession).where(
+                TestSession.candidate_email == candidate_email)
+            .limit(limit).offset(offset)
+        )
+        items = result.scalars().all()
+        return [SessionRead.model_validate(item) for item in items]
 
-    @staticmethod
-    async def update(template_id: UUID, session_id: UUID,
-                     data: TestSessionRead) -> Optional[TestSessionRead]:
-        async with async_session() as db:
-            session = await SessionService.get_by_id(template_id, session_id)
-            if not session:
-                return None
+    async def update_score(self, session_id: UUID, score: int) -> Optional[
+        SessionRead]:
+        result = await self.db.execute(
+            select(TestSession).where(TestSession.id == session_id))
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        obj.score = score
+        await self.db.commit()
+        await self.db.refresh(obj)
+        return SessionRead.model_validate(obj)
 
-            update_data = data.model_dump(exclude_unset=True)
-            for field, value in update_data.items():
-                setattr(session, field, value)
-
-            await db.commit()
-            await db.refresh(session)
-            return session
-
-    @staticmethod
-    async def delete(template_id: UUID, session_id: UUID) -> bool:
-        async with async_session() as db:
-            session = await SessionService.get_by_id(template_id, session_id)
-            if not session:
-                return False
-
-            await db.delete(session)
-            await db.commit()
-            return True
-
-    @staticmethod
-    async def create_answer(template_id: UUID, session_id: UUID,
+    async def create_answer(self,
                             data: SessionAnswerCreate) -> SessionAnswerRead:
-        async with async_session() as db:
-            session = await SessionService.get_by_id(template_id, session_id)
-            if not session:
-                raise ValueError("Session not found")
-            answer = SessionAnswer(**data.model_dump())
-            db.add(answer)
-            await db.commit()
-            await db.refresh(answer)
-            return answer
+        new_item = SessionAnswer(**data.model_dump(exclude_unset=True))
+        self.db.add(new_item)
+        await self.db.commit()
+        await self.db.refresh(new_item)
+        return SessionAnswerRead.model_validate(new_item)
 
-    @staticmethod
-    async def get_answers(template_id: UUID, session_id: UUID, skip: int = 0,
-                          limit: int = 100) -> List[SessionAnswerRead]:
-        async with async_session() as db:
-            session = await SessionService.get_by_id(template_id, session_id)
-            if not session:
-                raise ValueError("Session not found")
-            result = await db.execute(
-                select(SessionAnswer)
-                .where(SessionAnswer.session_id == session_id)
-                .offset(skip)
-                .limit(limit)
-            )
-            return result.scalars().all()
+    async def list_answers_for_session(
+            self, session_id: UUID, limit: int = 10, offset: int = 0
+    ) -> List[SessionAnswerRead]:
+        result = await self.db.execute(
+            select(SessionAnswer).where(SessionAnswer.session_id == session_id)
+            .limit(limit).offset(offset)
+        )
+        items = result.scalars().all()
+        return [SessionAnswerRead.model_validate(item) for item in items]

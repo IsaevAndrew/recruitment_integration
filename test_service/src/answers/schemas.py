@@ -1,26 +1,21 @@
-from pydantic import BaseModel
-from uuid import UUID
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
-class AnswerOptionBase(BaseModel):
+
+class AnswerBase(BaseModel):
     question_id: UUID
-    sequence: int
-    text: str
-    is_correct: bool
+    text: str = Field(min_length=1)
+    correct: bool = Field(default=False)
 
-class AnswerOptionCreate(AnswerOptionBase):
+
+class AnswerCreate(AnswerBase):
     pass
 
-class AnswerOptionUpdate(BaseModel):
-    sequence: Optional[int] = None
-    text: Optional[str] = None
-    is_correct: Optional[bool] = None
 
-class AnswerOptionRead(AnswerOptionBase):
+class AnswerRead(AnswerBase):
     id: UUID
     created_at: datetime
-    updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

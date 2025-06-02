@@ -8,9 +8,10 @@ from src.questions.router import router as questions_router
 from src.answers.router import router as answers_router
 from src.sessions.router import router as sessions_router
 
-from src.templates.models import TestTemplate  # noqa: F401
-from src.questions.models import Question  # noqa: F401
-from src.answers.models import AnswerOption  # noqa: F401
+# Импорт моделей для регистрации в metadata (даёт гарантии, что Base.metadata знает о всех таблицах)
+from src.templates.models import TestTemplate       # noqa: F401
+from src.questions.models import Question            # noqa: F401
+from src.answers.models import AnswerOption          # noqa: F401
 from src.sessions.models import TestSession, SessionAnswer  # noqa: F401
 
 app = FastAPI(
@@ -33,10 +34,11 @@ async def startup_event():
     await init_db()
 
 
-app.include_router(templates_router)
-app.include_router(questions_router)
-app.include_router(answers_router)
-app.include_router(sessions_router)
+# Роутеры доменов
+app.include_router(templates_router, prefix="/templates", tags=["templates"])
+app.include_router(questions_router, prefix="/questions", tags=["questions"])
+app.include_router(answers_router, prefix="/answers", tags=["answers"])
+app.include_router(sessions_router, prefix="/sessions", tags=["sessions"])
 
 
 @app.get("/health", tags=["Health"])

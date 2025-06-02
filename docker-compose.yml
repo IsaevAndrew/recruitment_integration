@@ -1,16 +1,6 @@
 version: "3.8"
 
 services:
-  candidate_db:
-    image: postgres:15
-    container_name: candidate_db
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: candidate_db
-    ports:
-      - "5433:5432"
-
   test_db:
     image: postgres:15
     container_name: test_db
@@ -21,16 +11,15 @@ services:
     ports:
       - "5434:5432"
 
-  candidate_service:
-    build: ./candidate_service
-    container_name: candidate_service
-    env_file:
-      - ./candidate_service/.env
+  candidate_db:
+    image: postgres:15
+    container_name: candidate_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: candidate_db
     ports:
-      - "8001:8000"
-    depends_on:
-      - test_db
-      - candidate_db
+      - "5433:5432"
 
   test_service:
     build: ./test_service
@@ -39,6 +28,17 @@ services:
       - ./test_service/.env
     ports:
       - "8002:8000"
+    depends_on:
+      - test_db
+      - candidate_db
+
+  candidate_service:
+    build: ./candidate_service
+    container_name: candidate_service
+    env_file:
+      - ./candidate_service/.env
+    ports:
+      - "8001:8000"
     depends_on:
       - test_db
       - candidate_db

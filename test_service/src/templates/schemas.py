@@ -1,23 +1,21 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from datetime import datetime
 
-class TestTemplateBase(BaseModel):
-    title: str
+
+class TemplateBase(BaseModel):
+    title: str = Field(min_length=1, max_length=100)
     description: Optional[str] = None
 
-class TestTemplateCreate(TestTemplateBase):
+
+class TemplateCreate(TemplateBase):
     pass
 
-class TestTemplateUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
 
-class TestTemplateRead(TestTemplateBase):
+class TemplateRead(TemplateBase):
     id: UUID
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

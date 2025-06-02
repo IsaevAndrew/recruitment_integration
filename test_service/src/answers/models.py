@@ -1,35 +1,29 @@
-from sqlalchemy import Column, Integer, Text, Boolean, DateTime, ForeignKey, func
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+import uuid
+from datetime import datetime
+
+from sqlalchemy import Text, Boolean, DateTime, func, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from src.database import Base
 
 
 class AnswerOption(Base):
-    __tablename__ = "answer_option"
+    __tablename__ = "answer_options"
 
-    id = Column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        server_default=func.gen_random_uuid()
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    question_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("question.id", ondelete="CASCADE"),
-        nullable=False
+    question_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("questions.id", ondelete="CASCADE"),
+        nullable=False,
     )
-    sequence = Column(Integer, nullable=False)
-    text = Column(Text, nullable=False)
-    is_correct = Column(Boolean, nullable=False, default=False)
-
-    created_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False
-    )
-    updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    correct: Mapped[bool] = mapped_column(Boolean, nullable=False,
+                                          default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    question = relationship("Question", back_populates="answer_options")
+    question = relationship("Question", back_populates="answers")

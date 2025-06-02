@@ -20,12 +20,10 @@ class JobApplication(Base):
     )
 
     status = Column(String(50), nullable=False, default="new")
-    # Будем хранить UUID сессии теста из test_service как строку
     test_session_id = Column(String, nullable=True)
     test_score = Column(Integer, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Обратные связи
     candidate = relationship("Candidate", back_populates="applications")
     vacancy = relationship("Vacancy", back_populates="applications")

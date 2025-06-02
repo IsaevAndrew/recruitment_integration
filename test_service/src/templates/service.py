@@ -1,56 +1,58 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete, update
 from typing import List, Optional
 from uuid import UUID
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from src.database import async_session
+
 from src.templates.models import TestTemplate
-from src.templates.schemas import TestTemplateCreate, TestTemplateUpdate, TestTemplateRead
+from src.templates.schemas import TemplateCreate, TemplateRead
+
 
 class TemplateService:
-    @staticmethod
-    async def create(data: TestTemplateCreate) -> TestTemplateRead:
-        async with async_session() as db:
-            template = TestTemplate(**data.model_dump())
-            db.add(template)
-            await db.commit()
-            await db.refresh(template)
-            return template
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
-    @staticmethod
-    async def get_all(skip: int = 0, limit: int = 100) -> List[TestTemplateRead]:
-        async with async_session() as db:
-            result = await db.execute(
-                select(TestTemplate).offset(skip).limit(limit)
-            )
-            return result.scalars().all()
+    async def create_template(self, data: TemplateCreate) -> TemplateRead:
+        new_item = TestTemplate(**data.model_dump(exclude_unset=True))
+        self.db.add(new_item)
+        await self.db.commit()
+        await self.db.refresh(new_item)
+        return TemplateRead.model_validate(new_item)
 
-    @staticmethod
-    async def get_by_id(template_id: UUID) -> Optional[TestTemplateRead]:
-        async with async_session() as db:
-            return await db.get(TestTemplate, template_id)
+    async def get_template(self, template_id: UUID) -> Optional[TemplateRead]:
+        result = await self.db.execute(
+            select(TestTemplate).where(TestTemplate.id == template_id))
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        return TemplateRead.model_validate(obj)
 
-    @staticmethod
-    async def update(template_id: UUID, data: TestTemplateUpdate) -> Optional[TestTemplateRead]:
-        async with async_session() as db:
-            template = await db.get(TestTemplate, template_id)
-            if not template:
-                return None
-            
-            update_data = data.model_dump(exclude_unset=True)
-            for field, value in update_data.items():
-                setattr(template, field, value)
-            
-            await db.commit()
-            await db.refresh(template)
-            return template
+    async def list_templates(self, limit: int = 10, offset: int = 0) -> List[
+        TemplateRead]:
+        result = await self.db.execute(
+            select(TestTemplate).limit(limit).offset(offset)
+        )
+        items = result.scalars().all()
+        return [TemplateRead.model_validate(item) for item in items]
 
-    @staticmethod
-    async def delete(template_id: UUID) -> bool:
-        async with async_session() as db:
-            template = await db.get(TestTemplate, template_id)
-            if not template:
-                return False
-            
-            await db.delete(template)
-            await db.commit()
-            return True
+    async def update_template(self, template_id: UUID, data: TemplateCreate) -> \
+    Optional[TemplateRead]:
+        result = await self.db.execute(
+            select(TestTemplate).where(TestTemplate.id == template_id))
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(obj, field, value)
+        await self.db.commit()
+        await self.db.refresh(obj)
+        return TemplateRead.model_validate(obj)
+
+    async def delete_template(self, template_id: UUID) -> bool:
+        result = await self.db.execute(
+            select(TestTemplate).where(TestTemplate.id == template_id))
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return False
+        await self.db.delete(obj)
+        await self.db.commit()
+        return True

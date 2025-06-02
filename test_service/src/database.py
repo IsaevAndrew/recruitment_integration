@@ -2,15 +2,27 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import NullPool
 from sqlalchemy import text
+
 from src.config import settings
 
-engine = create_async_engine(
-    str(settings.DATABASE_URL),
-    echo=True,
-    future=True,
-    poolclass=NullPool
+SQLALCHEMY_DATABASE_URL = (
+    f"postgresql+asyncpg://"
+    f"{settings.POSTGRES_USER}:"
+    f"{settings.POSTGRES_PASSWORD}@"
+    f"{settings.POSTGRES_HOST}:"
+    f"{settings.POSTGRES_PORT}/"
+    f"{settings.POSTGRES_DB}"
 )
 
+# Создаём асинхронный движок
+engine = create_async_engine(
+    SQLALCHEMY_DATABASE_URL,
+    echo=True,
+    future=True,
+    poolclass=NullPool,
+)
+
+# Фабрика сессий
 async_session = sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False
 )

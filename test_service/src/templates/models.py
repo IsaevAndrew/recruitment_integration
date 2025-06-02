@@ -1,31 +1,34 @@
-from sqlalchemy import Column, Text, DateTime, func
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+import uuid
+from datetime import datetime
+
+from sqlalchemy import String, Text, DateTime, func
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from src.database import Base
 
 
 class TestTemplate(Base):
-    __tablename__ = "test_template"
+    __tablename__ = "test_templates"
 
-    id = Column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        server_default=func.gen_random_uuid()
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    title = Column(Text, nullable=False)
-    description = Column(Text, nullable=True)
-
-    created_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now()
+    title: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    updated_at = Column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=func.now()
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )
 
     questions = relationship(
-        "Question",
-        back_populates="template",
-        cascade="all, delete-orphan"
+        "Question", back_populates="template", cascade="all, delete-orphan"
+    )
+    sessions = relationship(
+        "TestSession", back_populates="template", cascade="all, delete-orphan"
     )
