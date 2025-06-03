@@ -1,24 +1,22 @@
+from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from uuid import UUID
+
 
 class ApplicationBase(BaseModel):
-    candidate_id: int = Field(gt=0)
-    vacancy_id: int = Field(gt=0)
+    candidate_id: UUID
+    vacancy_id: UUID
+
 
 class ApplicationCreate(ApplicationBase):
     pass
 
-class ApplicationUpdate(BaseModel):
-    status: Optional[str] = Field(None, pattern="^(new|in_progress|completed|rejected)$")
-    test_score: Optional[int] = Field(None, ge=0, le=100)
 
 class ApplicationRead(ApplicationBase):
-    id: int
+    id: UUID
     status: str
-    test_session_id: Optional[str] = None
-    test_score: Optional[int] = None
     created_at: datetime
+    updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

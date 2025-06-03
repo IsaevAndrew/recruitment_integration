@@ -1,32 +1,23 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime
+from typing import Optional
+from uuid import UUID
 
 
 class CandidateBase(BaseModel):
-    last_name: str
-    first_name: str
-    middle_name: Optional[str] = None
+    first_name: str = Field(min_length=1, max_length=50)
+    last_name: str = Field(min_length=1, max_length=50)
     email: EmailStr
-    phone: Optional[str] = None
 
 
 class CandidateCreate(CandidateBase):
-    password: str
+    pass
 
 
 class CandidateRead(CandidateBase):
-    id: int
-    status: str
+    id: UUID
+    is_active: bool
     created_at: datetime
+    updated_at: Optional[datetime]
 
-    class Config:
-        orm_mode = True
-
-
-class CandidateUpdate(BaseModel):
-    last_name: Optional[str] = None
-    first_name: Optional[str] = None
-    middle_name: Optional[str] = None
-    phone: Optional[str] = None
-    status: Optional[str] = None
+    model_config = {"from_attributes": True}

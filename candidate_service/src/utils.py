@@ -19,22 +19,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def create_access_token(
-        data: dict,
-        expires_delta: Optional[timedelta] = None
-) -> str:
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
-        to_encode,
-        settings.JWT_SECRET,
-        algorithm=settings.JWT_ALGORITHM
+        to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM
     )
     return encoded_jwt
 
@@ -42,17 +38,14 @@ def create_access_token(
 def decode_access_token(token: str) -> dict:
     try:
         payload = jwt.decode(
-            token,
-            settings.JWT_SECRET,
-            algorithms=[settings.JWT_ALGORITHM]
+            token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
         )
         return payload
     except JWTError as e:
         raise e
 
 
-async def create_test_session(template_id: str,
-                              external_application_id: int) -> str:
+async def create_test_session(template_id: str, external_application_id: int) -> str:
     url = f"{settings.TEST_SERVICE_URL}/templates/{template_id}/sessions"
     payload = {"external_application_id": external_application_id}
 
@@ -65,5 +58,5 @@ async def create_test_session(template_id: str,
     except httpx.HTTPError as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Failed to create test session: {str(e)}"
+            detail=f"Failed to create test session: {str(e)}",
         )

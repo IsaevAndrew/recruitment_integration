@@ -1,21 +1,30 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.pool import NullPool
 from sqlalchemy import text
+
 from src.config import settings
 
+SQLALCHEMY_DATABASE_URL = (
+    f"postgresql+asyncpg://"
+    f"{settings.POSTGRES_USER}:"
+    f"{settings.POSTGRES_PASSWORD}@"
+    f"{settings.POSTGRES_HOST}:"
+    f"{settings.POSTGRES_PORT}/"
+    f"{settings.POSTGRES_DB}"
+)
+
 engine = create_async_engine(
-    str(settings.DATABASE_URL),
+    SQLALCHEMY_DATABASE_URL,
     echo=True,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
-    connect_args={"server_settings": {"search_path": "public"}}
+    future=True,
+    poolclass=NullPool,
 )
 
 async_session = sessionmaker(
-    bind=engine,
+    engine,
     class_=AsyncSession,
-
+    expire_on_commit=False,
 )
 
 Base = declarative_base()

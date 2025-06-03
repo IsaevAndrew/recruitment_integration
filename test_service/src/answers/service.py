@@ -20,18 +20,21 @@ class AnswerService:
 
     async def get_answer(self, answer_id: UUID) -> Optional[AnswerRead]:
         result = await self.db.execute(
-            select(AnswerOption).where(AnswerOption.id == answer_id))
+            select(AnswerOption).where(AnswerOption.id == answer_id)
+        )
         obj = result.scalar_one_or_none()
         if not obj:
             return None
         return AnswerRead.model_validate(obj)
 
     async def list_answers(
-            self, question_id: UUID, limit: int = 10, offset: int = 0
+        self, question_id: UUID, limit: int = 10, offset: int = 0
     ) -> List[AnswerRead]:
         result = await self.db.execute(
-            select(AnswerOption).where(AnswerOption.question_id == question_id)
-            .limit(limit).offset(offset)
+            select(AnswerOption)
+            .where(AnswerOption.question_id == question_id)
+            .limit(limit)
+            .offset(offset)
         )
         items = result.scalars().all()
         return [AnswerRead.model_validate(item) for item in items]

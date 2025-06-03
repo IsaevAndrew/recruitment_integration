@@ -1,4 +1,3 @@
-from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings
 from datetime import timedelta
 
@@ -6,13 +5,17 @@ from datetime import timedelta
 class Settings(BaseSettings):
     PROJECT_NAME: str = "candidate-service"
 
-    DATABASE_URL: PostgresDsn
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_HOST: str = "candidate_db"
+    POSTGRES_PORT: str = "5432"
+    POSTGRES_DB: str
 
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    TEST_SERVICE_URL: str = "http://localhost:8002"
+    TEST_SERVICE_URL: str
 
     @property
     def access_token_expire_timedelta(self) -> timedelta:

@@ -20,8 +20,7 @@ class AnswerOption(Base):
         nullable=False,
     )
     text: Mapped[str] = mapped_column(Text, nullable=False)
-    correct: Mapped[bool] = mapped_column(Boolean, nullable=False,
-                                          default=False)
+    correct: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

@@ -20,18 +20,21 @@ class QuestionService:
 
     async def get_question(self, question_id: UUID) -> Optional[QuestionRead]:
         result = await self.db.execute(
-            select(Question).where(Question.id == question_id))
+            select(Question).where(Question.id == question_id)
+        )
         obj = result.scalar_one_or_none()
         if not obj:
             return None
         return QuestionRead.model_validate(obj)
 
     async def list_questions(
-            self, template_id: UUID, limit: int = 10, offset: int = 0
+        self, template_id: UUID, limit: int = 10, offset: int = 0
     ) -> List[QuestionRead]:
         result = await self.db.execute(
-            select(Question).where(Question.template_id == template_id)
-            .limit(limit).offset(offset)
+            select(Question)
+            .where(Question.template_id == template_id)
+            .limit(limit)
+            .offset(offset)
         )
         items = result.scalars().all()
         return [QuestionRead.model_validate(item) for item in items]

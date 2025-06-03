@@ -20,24 +20,26 @@ class TemplateService:
 
     async def get_template(self, template_id: UUID) -> Optional[TemplateRead]:
         result = await self.db.execute(
-            select(TestTemplate).where(TestTemplate.id == template_id))
+            select(TestTemplate).where(TestTemplate.id == template_id)
+        )
         obj = result.scalar_one_or_none()
         if not obj:
             return None
         return TemplateRead.model_validate(obj)
 
-    async def list_templates(self, limit: int = 10, offset: int = 0) -> List[
-        TemplateRead]:
-        result = await self.db.execute(
-            select(TestTemplate).limit(limit).offset(offset)
-        )
+    async def list_templates(
+        self, limit: int = 10, offset: int = 0
+    ) -> List[TemplateRead]:
+        result = await self.db.execute(select(TestTemplate).limit(limit).offset(offset))
         items = result.scalars().all()
         return [TemplateRead.model_validate(item) for item in items]
 
-    async def update_template(self, template_id: UUID, data: TemplateCreate) -> \
-    Optional[TemplateRead]:
+    async def update_template(
+        self, template_id: UUID, data: TemplateCreate
+    ) -> Optional[TemplateRead]:
         result = await self.db.execute(
-            select(TestTemplate).where(TestTemplate.id == template_id))
+            select(TestTemplate).where(TestTemplate.id == template_id)
+        )
         obj = result.scalar_one_or_none()
         if not obj:
             return None
@@ -49,7 +51,8 @@ class TemplateService:
 
     async def delete_template(self, template_id: UUID) -> bool:
         result = await self.db.execute(
-            select(TestTemplate).where(TestTemplate.id == template_id))
+            select(TestTemplate).where(TestTemplate.id == template_id)
+        )
         obj = result.scalar_one_or_none()
         if not obj:
             return False

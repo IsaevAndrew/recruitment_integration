@@ -14,7 +14,6 @@ SQLALCHEMY_DATABASE_URL = (
     f"{settings.POSTGRES_DB}"
 )
 
-# Создаём асинхронный движок
 engine = create_async_engine(
     SQLALCHEMY_DATABASE_URL,
     echo=True,
@@ -22,10 +21,7 @@ engine = create_async_engine(
     poolclass=NullPool,
 )
 
-# Фабрика сессий
-async_session = sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
-)
+async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 Base = declarative_base()
 

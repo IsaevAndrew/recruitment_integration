@@ -1,103 +1,54 @@
-from typing import Optional, List
-from fastapi import HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from typing import List, Optional
+from uuid import UUID
 
 from src.applications.models import JobApplication
-from src.applications.schemas import ApplicationCreate, ApplicationUpdate, \
-    ApplicationRead
-from src.candidates.models import Candidate
-from src.vacancies.models import Vacancy
-from src.utils import create_test_session
+from src.applications.schemas import ApplicationCreate, ApplicationRead
 
 
 class ApplicationService:
-    @staticmethod
-    async def create(db: AsyncSession,
-                     data: ApplicationCreate) -> JobApplication:
-        candidate = await db.get(Candidate, data.candidate_id)
-        if not candidate:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Candidate not found"
-            )
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
-        vacancy = await db.get(Vacancy, data.vacancy_id)
-        if not vacancy:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Vacancy not found"
-            )
+    async def create_application(self, data: ApplicationCreate) -> ApplicationRead:
+        new_item = JobApplication(**data.model_dump(exclude_unset=True))
+        self.db.add(new_item)
+        await self.db.commit()
+        await self.db.refresh(new_item)
+        return ApplicationRead.model_validate(new_item)
 
-        application = JobApplication(
-            candidate_id=data.candidate_id,
-            vacancy_id=data.vacancy_id,
-            status="new"
+    async def get_application(self, application_id: UUID) -> Optional[ApplicationRead]:
+        result = await self.db.execute(
+            select(JobApplication).where(JobApplication.id == application_id)
         )
-        db.add(application)
-        await db.commit()
-        await db.refresh(application)
-
-        try:
-            test_session_id = await create_test_session(
-                template_id=str(vacancy.id),
-                external_application_id=application.id
-            )
-            application.test_session_id = test_session_id
-            await db.commit()
-            await db.refresh(application)
-        except Exception as e:
-            await db.delete(application)
-            await db.commit()
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Failed to create test session: {str(e)}"
-            )
-
-        return application
-
-    @staticmethod
-    async def get_all(
-            db: AsyncSession,
-            skip: int = 0,
-            limit: int = 100
-    ) -> List[JobApplication]:
-        result = await db.execute(
-            select(JobApplication)
-            .offset(skip)
-            .limit(limit)
-        )
-        return result.scalars().all()
-
-    @staticmethod
-    async def get_by_id(db: AsyncSession, application_id: int) -> Optional[
-        JobApplication]:
-        return await db.get(JobApplication, application_id)
-
-    @staticmethod
-    async def update(
-            db: AsyncSession,
-            application_id: int,
-            data: ApplicationUpdate
-    ) -> Optional[JobApplication]:
-        application = await db.get(JobApplication, application_id)
-        if not application:
+        obj = result.scalar_one_or_none()
+        if not obj:
             return None
+        return ApplicationRead.model_validate(obj)
 
-        update_data = data.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(application, field, value)
+    async def list_applications(
+        self, candidate_id: UUID, limit: int = 10, offset: int = 0
+    ) -> List[ApplicationRead]:
+        result = await self.db.execute(
+            select(JobApplication)
+            .where(JobApplication.candidate_id == candidate_id)
+            .limit(limit)
+            .offset(offset)
+        )
+        items = result.scalars().all()
+        return [ApplicationRead.model_validate(item) for item in items]
 
-        await db.commit()
-        await db.refresh(application)
-        return application
-
-    @staticmethod
-    async def delete(db: AsyncSession, application_id: int) -> bool:
-        application = await db.get(JobApplication, application_id)
-        if not application:
-            return False
-
-        await db.delete(application)
-        await db.commit()
-        return True
+    async def update_application_status(
+        self, application_id: UUID, new_status: str
+    ) -> Optional[ApplicationRead]:
+        result = await self.db.execute(
+            select(JobApplication).where(JobApplication.id == application_id)
+        )
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        obj.status = new_status
+        await self.db.commit()
+        await self.db.refresh(obj)
+        return ApplicationRead.model_validate(obj)

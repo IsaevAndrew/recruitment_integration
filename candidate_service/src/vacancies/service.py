@@ -1,69 +1,55 @@
-from typing import List, Optional
-
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from typing import List, Optional
+from uuid import UUID
 
-from src.vacancies.schemas import VacancyCreate, VacancyUpdate, VacancyRead
 from src.vacancies.models import Vacancy
-from src.database import async_session
+from src.vacancies.schemas import VacancyCreate, VacancyRead
 
 
 class VacancyService:
-    @staticmethod
-    async def create(data: VacancyCreate) -> VacancyRead:
-        async with async_session() as session:
-            db_obj = Vacancy(
-                title=data.title,
-                description=data.description
-            )
-            session.add(db_obj)
-            await session.commit()
-            await session.refresh(db_obj)
-            return VacancyRead.from_orm(db_obj)
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
-    @staticmethod
-    async def get_all(skip: int = 0, limit: int = 100) -> List[VacancyRead]:
-        async with async_session() as session:
-            stmt = select(Vacancy).offset(skip).limit(limit)
-            result = await session.execute(stmt)
-            vacancies = result.scalars().all()
-            return [VacancyRead.from_orm(obj) for obj in vacancies]
+    async def create_vacancy(self, data: VacancyCreate) -> VacancyRead:
+        new_item = Vacancy(**data.model_dump(exclude_unset=True))
+        self.db.add(new_item)
+        await self.db.commit()
+        await self.db.refresh(new_item)
+        return VacancyRead.model_validate(new_item)
 
-    @staticmethod
-    async def get_by_id(vacancy_id: int) -> Optional[VacancyRead]:
-        async with async_session() as session:
-            stmt = select(Vacancy).where(Vacancy.id == vacancy_id)
-            result = await session.execute(stmt)
-            obj = result.scalar_one_or_none()
-            if not obj:
-                return None
-            return VacancyRead.from_orm(obj)
+    async def get_vacancy(self, vacancy_id: UUID) -> Optional[VacancyRead]:
+        result = await self.db.execute(select(Vacancy).where(Vacancy.id == vacancy_id))
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        return VacancyRead.model_validate(obj)
 
-    @staticmethod
-    async def update(vacancy_id: int, data: VacancyUpdate) -> Optional[
-        VacancyRead]:
-        async with async_session() as session:
-            stmt = select(Vacancy).where(Vacancy.id == vacancy_id)
-            result = await session.execute(stmt)
-            obj: Vacancy = result.scalar_one_or_none()
-            if not obj:
-                return None
-            update_data = data.dict(exclude_unset=True)
-            for field, value in update_data.items():
-                setattr(obj, field, value)
-            session.add(obj)
-            await session.commit()
-            await session.refresh(obj)
-            return VacancyRead.from_orm(obj)
+    async def list_vacancies(
+        self, limit: int = 10, offset: int = 0
+    ) -> List[VacancyRead]:
+        result = await self.db.execute(select(Vacancy).limit(limit).offset(offset))
+        items = result.scalars().all()
+        return [VacancyRead.model_validate(item) for item in items]
 
-    @staticmethod
-    async def delete(vacancy_id: int) -> bool:
-        async with async_session() as session:
-            stmt = select(Vacancy).where(Vacancy.id == vacancy_id)
-            result = await session.execute(stmt)
-            obj: Vacancy = result.scalar_one_or_none()
-            if not obj:
-                return False
-            await session.delete(obj)
-            await session.commit()
-            return True
+    async def update_vacancy(
+        self, vacancy_id: UUID, data: VacancyCreate
+    ) -> Optional[VacancyRead]:
+        result = await self.db.execute(select(Vacancy).where(Vacancy.id == vacancy_id))
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(obj, field, value)
+        await self.db.commit()
+        await self.db.refresh(obj)
+        return VacancyRead.model_validate(obj)
+
+    async def delete_vacancy(self, vacancy_id: UUID) -> bool:
+        result = await self.db.execute(select(Vacancy).where(Vacancy.id == vacancy_id))
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return False
+        await self.db.delete(obj)
+        await self.db.commit()
+        return True

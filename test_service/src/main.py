@@ -9,9 +9,9 @@ from src.answers.router import router as answers_router
 from src.sessions.router import router as sessions_router
 
 # Импорт моделей для регистрации в metadata (даёт гарантии, что Base.metadata знает о всех таблицах)
-from src.templates.models import TestTemplate       # noqa: F401
-from src.questions.models import Question            # noqa: F401
-from src.answers.models import AnswerOption          # noqa: F401
+from src.templates.models import TestTemplate  # noqa: F401
+from src.questions.models import Question  # noqa: F401
+from src.answers.models import AnswerOption  # noqa: F401
 from src.sessions.models import TestSession, SessionAnswer  # noqa: F401
 
 app = FastAPI(

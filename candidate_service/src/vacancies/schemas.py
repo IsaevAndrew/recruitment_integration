@@ -1,10 +1,11 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import Optional
+from uuid import UUID
 
 
 class VacancyBase(BaseModel):
-    title: str
+    title: str = Field(min_length=1, max_length=100)
     description: Optional[str] = None
 
 
@@ -13,13 +14,8 @@ class VacancyCreate(VacancyBase):
 
 
 class VacancyRead(VacancyBase):
-    id: int
+    id: UUID
     created_at: datetime
+    updated_at: Optional[datetime]
 
-    class Config:
-        orm_mode = True
-
-
-class VacancyUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
+    model_config = {"from_attributes": True}

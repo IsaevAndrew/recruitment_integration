@@ -1,84 +1,62 @@
-from typing import List, Optional
-
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from typing import List, Optional
+from uuid import UUID
 
-from src.candidates.schemas import CandidateCreate, CandidateUpdate, \
-    CandidateRead
 from src.candidates.models import Candidate
-from src.database import async_session
-from src.utils import hash_password
+from src.candidates.schemas import CandidateCreate, CandidateRead
 
 
 class CandidateService:
-    @staticmethod
-    async def create(data: CandidateCreate) -> CandidateRead:
-        async with async_session() as session:
-            stmt = select(Candidate).where(Candidate.email == data.email)
-            existing = await session.execute(stmt)
-            if existing.scalar_one_or_none():
-                raise Exception("Email already registered")
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
-            hashed_pw = hash_password(data.password)
-            db_obj = Candidate(
-                last_name=data.last_name,
-                first_name=data.first_name,
-                middle_name=data.middle_name,
-                email=data.email,
-                phone=data.phone,
-                password_hash=hashed_pw,
-                status="new",
-            )
-            session.add(db_obj)
-            await session.commit()
-            await session.refresh(db_obj)
-            return CandidateRead.from_orm(db_obj)
+    async def create_candidate(self, data: CandidateCreate) -> CandidateRead:
+        new_item = Candidate(**data.model_dump(exclude_unset=True))
+        self.db.add(new_item)
+        await self.db.commit()
+        await self.db.refresh(new_item)
+        return CandidateRead.model_validate(new_item)
 
-    @staticmethod
-    async def get_all(skip: int = 0, limit: int = 100) -> List[CandidateRead]:
-        async with async_session() as session:
-            stmt = select(Candidate).offset(skip).limit(limit)
-            result = await session.execute(stmt)
-            candidates = result.scalars().all()
-            return [CandidateRead.from_orm(obj) for obj in candidates]
+    async def get_candidate(self, candidate_id: UUID) -> Optional[CandidateRead]:
+        result = await self.db.execute(
+            select(Candidate).where(Candidate.id == candidate_id)
+        )
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        return CandidateRead.model_validate(obj)
 
-    @staticmethod
-    async def get_by_id(candidate_id: int) -> Optional[CandidateRead]:
-        async with async_session() as session:
-            stmt = select(Candidate).where(Candidate.id == candidate_id)
-            result = await session.execute(stmt)
-            obj = result.scalar_one_or_none()
-            if not obj:
-                return None
-            return CandidateRead.from_orm(obj)
+    async def list_candidates(
+        self, limit: int = 10, offset: int = 0
+    ) -> List[CandidateRead]:
+        result = await self.db.execute(select(Candidate).limit(limit).offset(offset))
+        items = result.scalars().all()
+        return [CandidateRead.model_validate(item) for item in items]
 
-    @staticmethod
-    async def update(candidate_id: int, data: CandidateUpdate) -> Optional[
-        CandidateRead]:
+    async def update_candidate(
+        self, candidate_id: UUID, data: CandidateCreate
+    ) -> Optional[CandidateRead]:
+        result = await self.db.execute(
+            select(Candidate).where(Candidate.id == candidate_id)
+        )
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(obj, field, value)
+        await self.db.commit()
+        await self.db.refresh(obj)
+        return CandidateRead.model_validate(obj)
 
-        async with async_session() as session:
-            stmt = select(Candidate).where(Candidate.id == candidate_id)
-            result = await session.execute(stmt)
-            obj: Candidate = result.scalar_one_or_none()
-            if not obj:
-                return None
-
-            update_data = data.dict(exclude_unset=True)
-            for field, value in update_data.items():
-                setattr(obj, field, value)
-            session.add(obj)
-            await session.commit()
-            await session.refresh(obj)
-            return CandidateRead.from_orm(obj)
-
-    @staticmethod
-    async def delete(candidate_id: int) -> bool:
-        async with async_session() as session:
-            stmt = select(Candidate).where(Candidate.id == candidate_id)
-            result = await session.execute(stmt)
-            obj: Candidate = result.scalar_one_or_none()
-            if not obj:
-                return False
-            await session.delete(obj)
-            await session.commit()
-            return True
+    async def deactivate_candidate(self, candidate_id: UUID) -> Optional[CandidateRead]:
+        result = await self.db.execute(
+            select(Candidate).where(Candidate.id == candidate_id)
+        )
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        obj.is_active = False
+        await self.db.commit()
+        await self.db.refresh(obj)
+        return CandidateRead.model_validate(obj)
