@@ -13,6 +13,10 @@ class ApplicationCreate(ApplicationBase):
     pass
 
 
+class AssignTestPayload(BaseModel):
+    template_id: UUID
+
+
 class ApplicationRead(ApplicationBase):
     id: UUID
     status: str

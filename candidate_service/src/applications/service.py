@@ -66,3 +66,12 @@ class ApplicationService:
         await self.db.commit()
         await self.db.refresh(obj)
         return ApplicationRead.model_validate(obj)
+
+    async def get_application(self, application_id: UUID) -> Optional[ApplicationRead]:
+        result = await self.db.execute(
+            select(JobApplication).where(JobApplication.id == application_id)
+        )
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        return ApplicationRead.model_validate(obj)

@@ -66,12 +66,6 @@ class SessionService:
         return [SessionAnswerRead.model_validate(item) for item in items]
 
     async def calculate_score_and_callback(self, session_id: UUID) -> None:
-        """
-        Вызывается при POST /sessions/{session_id}/finish:
-        — считает количество правильных ответов,
-        — сохраняет score,
-        — делает callback в candidate_service.
-        """
         result = await self.db.execute(
             select(TestSession).where(TestSession.id == session_id)
         )
@@ -79,7 +73,6 @@ class SessionService:
         if not session_obj:
             return
 
-        # Собираем все ответы по этой сессии
         result_all = await self.db.execute(
             select(SessionAnswer).where(SessionAnswer.session_id == session_id)
         )
@@ -94,12 +87,10 @@ class SessionService:
             if answer_option and answer_option.correct:
                 correct_count += 1
 
-        # Сохраняем score в таблице test_sessions
         session_obj.score = correct_count
         await self.db.commit()
         await self.db.refresh(session_obj)
 
-        # Делаем callback в candidate_service
         callback_payload = {"session_id": str(session_id), "score": correct_count}
         async with httpx.AsyncClient() as client:
             try:
