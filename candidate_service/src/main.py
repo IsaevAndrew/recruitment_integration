@@ -33,10 +33,10 @@ async def on_startup():
     await init_db()
 
 
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(candidates_router, prefix="/candidates", tags=["candidates"])
-app.include_router(vacancies_router, prefix="/vacancies", tags=["vacancies"])
-app.include_router(applications_router, prefix="/applications", tags=["applications"])
+app.include_router(auth_router)
+app.include_router(candidates_router)
+app.include_router(vacancies_router)
+app.include_router(applications_router)
 
 
 @app.get("/health", tags=["Health"])

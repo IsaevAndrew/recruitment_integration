@@ -6,7 +6,7 @@ from src.templates.schemas import TemplateCreate, TemplateRead
 from src.templates.dependencies import get_template_service, valid_template_id
 from src.templates.service import TemplateService
 
-router = APIRouter()
+router = APIRouter(prefix="/templates", tags=["templates"])
 
 
 @router.post("/", response_model=TemplateRead, status_code=status.HTTP_201_CREATED)

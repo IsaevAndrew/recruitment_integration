@@ -1,62 +1,14 @@
-from datetime import datetime, timedelta
-from typing import Optional, Any
-
-import httpx
-from passlib.context import CryptContext
-from jose import JWTError, jwt
-from fastapi import HTTPException, status
-
-from src.config import settings
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import re
 
 
-def hash_password(plain_password: str) -> str:
-    return pwd_context.hash(plain_password)
+def is_valid_uuid4(s: str) -> bool:
 
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
-
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(
-        to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM
+    regex = re.compile(
+        r"^[a-f0-9]{8}-"
+        r"[a-f0-9]{4}-"
+        r"4[a-f0-9]{3}-"
+        r"[89ab][a-f0-9]{3}-"
+        r"[a-f0-9]{12}\Z",
+        re.I,
     )
-    return encoded_jwt
-
-
-def decode_access_token(token: str) -> dict:
-    try:
-        payload = jwt.decode(
-            token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
-        )
-        return payload
-    except JWTError as e:
-        raise e
-
-
-async def create_test_session(template_id: str, external_application_id: int) -> str:
-    url = f"{settings.TEST_SERVICE_URL}/templates/{template_id}/sessions"
-    payload = {"external_application_id": external_application_id}
-
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            return data["token"]
-    except httpx.HTTPError as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Failed to create test session: {str(e)}",
-        )
+    return bool(regex.match(s))

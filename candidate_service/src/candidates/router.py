@@ -8,7 +8,7 @@ from src.candidates.dependencies import get_candidate_service, valid_candidate_i
 from src.candidates.service import CandidateService
 from src.config import settings
 
-router = APIRouter()
+router = APIRouter(prefix="/candidates", tags=["candidates"])
 
 
 @router.post("/", response_model=CandidateRead, status_code=status.HTTP_201_CREATED)

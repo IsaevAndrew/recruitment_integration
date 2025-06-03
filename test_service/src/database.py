@@ -21,12 +21,16 @@ engine = create_async_engine(
     poolclass=NullPool,
 )
 
-async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+async_session = sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
 
 Base = declarative_base()
 
 
-async def get_db():
+async def get_db() -> AsyncSession:
     async with async_session() as session:
         try:
             yield session

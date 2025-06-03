@@ -1,20 +1,20 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
 
-class AnswerBase(BaseModel):
+class AnswerOptionBase(BaseModel):
     question_id: UUID
-    text: str = Field(min_length=1)
-    correct: bool = Field(default=False)
+    text: str
+    correct: bool = False
 
 
-class AnswerCreate(AnswerBase):
+class AnswerOptionCreate(AnswerOptionBase):
     pass
 
 
-class AnswerRead(AnswerBase):
+class AnswerOptionRead(AnswerOptionBase):
     id: UUID
     created_at: datetime
 

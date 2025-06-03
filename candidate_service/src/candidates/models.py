@@ -28,7 +28,6 @@ class Candidate(Base):
         onupdate=func.now(),
     )
 
-    # Связь с откликами
     applications = relationship(
         "JobApplication", back_populates="candidate", cascade="all, delete-orphan"
     )

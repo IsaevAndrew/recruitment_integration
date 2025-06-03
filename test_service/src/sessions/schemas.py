@@ -1,38 +1,36 @@
-from pydantic import BaseModel, Field, EmailStr
-from datetime import datetime
+from pydantic import BaseModel
 from typing import Optional, List
 from uuid import UUID
 
 
-class SessionBase(BaseModel):
+class SessionCreate(BaseModel):
+    application_id: UUID
     template_id: UUID
-    candidate_email: EmailStr
+    candidate_email: str
 
 
-class SessionCreate(SessionBase):
-    pass
-
-
-class SessionRead(SessionBase):
+class SessionRead(BaseModel):
     id: UUID
+    application_id: UUID
+    template_id: UUID
+    candidate_email: str
+    created_at: Optional[str]
     score: Optional[int]
-    created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
-class SessionAnswerBase(BaseModel):
+class SessionAnswerCreate(BaseModel):
     session_id: UUID
     question_id: UUID
     answer_id: UUID
 
 
-class SessionAnswerCreate(SessionAnswerBase):
-    pass
-
-
-class SessionAnswerRead(SessionAnswerBase):
+class SessionAnswerRead(BaseModel):
     id: UUID
-    created_at: datetime
+    session_id: UUID
+    question_id: UUID
+    answer_id: UUID
+    created_at: Optional[str]
 
     model_config = {"from_attributes": True}

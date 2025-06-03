@@ -4,26 +4,37 @@ services:
   test_db:
     image: postgres:15
     container_name: test_db
+    restart: always
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: test_db
     ports:
       - "5434:5432"
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+    networks:
+      - integration-net
 
   candidate_db:
     image: postgres:15
     container_name: candidate_db
+    restart: always
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: candidate_db
     ports:
       - "5433:5432"
+    volumes:
+      - candidate_db_data:/var/lib/postgresql/data
+    networks:
+      - integration-net
 
   test_service:
     build: ./test_service
     container_name: test_service
+    restart: always
     env_file:
       - ./test_service/.env
     ports:
@@ -31,14 +42,27 @@ services:
     depends_on:
       - test_db
       - candidate_db
+    networks:
+      - integration-net
 
   candidate_service:
     build: ./candidate_service
     container_name: candidate_service
+    restart: always
     env_file:
       - ./candidate_service/.env
     ports:
       - "8001:8000"
     depends_on:
-      - test_db
       - candidate_db
+      - test_db
+    networks:
+      - integration-net
+
+volumes:
+  test_db_data:
+  candidate_db_data:
+
+networks:
+  integration-net:
+    driver: bridge

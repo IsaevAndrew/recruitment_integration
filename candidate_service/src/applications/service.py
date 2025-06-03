@@ -4,7 +4,11 @@ from typing import List, Optional
 from uuid import UUID
 
 from src.applications.models import JobApplication
-from src.applications.schemas import ApplicationCreate, ApplicationRead
+from src.applications.schemas import (
+    ApplicationCreate,
+    ApplicationRead,
+    TestResultPayload,
+)
 
 
 class ApplicationService:
@@ -40,7 +44,11 @@ class ApplicationService:
         return [ApplicationRead.model_validate(item) for item in items]
 
     async def update_application_status(
-        self, application_id: UUID, new_status: str
+        self,
+        application_id: UUID,
+        new_status: str,
+        test_session_id: Optional[UUID] = None,
+        test_score: Optional[int] = None,
     ) -> Optional[ApplicationRead]:
         result = await self.db.execute(
             select(JobApplication).where(JobApplication.id == application_id)
@@ -48,7 +56,13 @@ class ApplicationService:
         obj = result.scalar_one_or_none()
         if not obj:
             return None
+
         obj.status = new_status
+        if test_session_id is not None:
+            obj.test_session_id = test_session_id
+        if test_score is not None:
+            obj.test_score = test_score
+
         await self.db.commit()
         await self.db.refresh(obj)
         return ApplicationRead.model_validate(obj)

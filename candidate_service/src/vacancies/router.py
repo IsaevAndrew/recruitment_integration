@@ -6,7 +6,7 @@ from src.vacancies.schemas import VacancyCreate, VacancyRead
 from src.vacancies.dependencies import get_vacancy_service, valid_vacancy_id
 from src.vacancies.service import VacancyService
 
-router = APIRouter()
+router = APIRouter(prefix="/vacancies", tags=["vacancies"])
 
 
 @router.post("/", response_model=VacancyRead, status_code=status.HTTP_201_CREATED)

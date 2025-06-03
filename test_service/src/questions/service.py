@@ -38,3 +38,29 @@ class QuestionService:
         )
         items = result.scalars().all()
         return [QuestionRead.model_validate(item) for item in items]
+
+    async def update_question(
+        self, question_id: UUID, data: QuestionCreate
+    ) -> Optional[QuestionRead]:
+        result = await self.db.execute(
+            select(Question).where(Question.id == question_id)
+        )
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return None
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(obj, field, value)
+        await self.db.commit()
+        await self.db.refresh(obj)
+        return QuestionRead.model_validate(obj)
+
+    async def delete_question(self, question_id: UUID) -> bool:
+        result = await self.db.execute(
+            select(Question).where(Question.id == question_id)
+        )
+        obj = result.scalar_one_or_none()
+        if not obj:
+            return False
+        await self.db.delete(obj)
+        await self.db.commit()
+        return True
