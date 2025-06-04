@@ -20,9 +20,7 @@ class SessionRead(BaseModel):
 
     model_config = {
         "from_attributes": True,
-        "json_encoders": {
-            datetime: lambda v: v.isoformat()
-        }
+        "json_encoders": {datetime: lambda v: v.isoformat()},
     }
 
 
@@ -41,7 +39,5 @@ class SessionAnswerRead(BaseModel):
 
     model_config = {
         "from_attributes": True,
-        "json_encoders": {
-            datetime: lambda v: v.isoformat()
-        }
+        "json_encoders": {datetime: lambda v: v.isoformat()},
     }
