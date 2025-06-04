@@ -16,7 +16,6 @@ class QuestionService:
 
     async def create_question(self, data: QuestionCreate) -> QuestionRead:
         try:
-            # Check if template exists
             template_result = await self.db.execute(
                 select(TestTemplate).where(TestTemplate.id == data.template_id)
             )

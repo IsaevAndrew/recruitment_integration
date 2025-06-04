@@ -15,7 +15,6 @@ class CandidateService:
 
     async def create_candidate(self, data: CandidateCreate) -> CandidateRead:
         try:
-            # Check if candidate with this email already exists
             existing_candidate = await self.db.execute(
                 select(Candidate).where(Candidate.email == data.email)
             )
@@ -77,7 +76,6 @@ class CandidateService:
         self, candidate_id: UUID, data: CandidateCreate
     ) -> Optional[CandidateRead]:
         try:
-            # Check if candidate exists
             result = await self.db.execute(
                 select(Candidate).where(Candidate.id == candidate_id)
             )
@@ -88,7 +86,6 @@ class CandidateService:
                     detail=f"Candidate with id {candidate_id} not found",
                 )
 
-            # Check if email is being changed and if it's already taken
             if data.email != obj.email:
                 existing_candidate = await self.db.execute(
                     select(Candidate).where(Candidate.email == data.email)
@@ -119,7 +116,6 @@ class CandidateService:
 
     async def deactivate_candidate(self, candidate_id: UUID) -> Optional[CandidateRead]:
         try:
-            # Check if candidate exists
             result = await self.db.execute(
                 select(Candidate).where(Candidate.id == candidate_id)
             )

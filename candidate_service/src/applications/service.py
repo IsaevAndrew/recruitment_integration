@@ -78,7 +78,6 @@ class ApplicationService:
         test_score: Optional[int] = None,
     ) -> Optional[ApplicationRead]:
         try:
-            # Check if application exists
             result = await self.db.execute(
                 select(JobApplication).where(JobApplication.id == application_id)
             )
@@ -89,7 +88,6 @@ class ApplicationService:
                     detail=f"Application with id {application_id} not found",
                 )
 
-            # Validate status
             valid_statuses = ["applied", "tested", "hired"]
             if new_status not in valid_statuses:
                 raise HTTPException(

@@ -25,7 +25,6 @@ class SessionService:
 
     async def create_session(self, data: SessionCreate) -> SessionRead:
         try:
-            # Check if template exists
             template_result = await self.db.execute(
                 select(TestTemplate).where(TestTemplate.id == data.template_id)
             )
@@ -90,7 +89,6 @@ class SessionService:
 
     async def create_answer(self, data: SessionAnswerCreate) -> SessionAnswerRead:
         try:
-            # Check if session exists
             session_result = await self.db.execute(
                 select(TestSession).where(TestSession.id == data.session_id)
             )
@@ -101,7 +99,6 @@ class SessionService:
                     detail=f"Session with id {data.session_id} not found",
                 )
 
-            # Check if question exists and belongs to the session's template
             question_result = await self.db.execute(
                 select(Question)
                 .where(Question.id == data.question_id)
@@ -114,7 +111,6 @@ class SessionService:
                     detail=f"Question with id {data.question_id} not found or does not belong to the session's template",
                 )
 
-            # Check if answer option exists and belongs to the question
             answer_result = await self.db.execute(
                 select(AnswerOption)
                 .where(AnswerOption.id == data.answer_id)
@@ -199,7 +195,6 @@ class SessionService:
                         timeout=10.0,
                     )
                 except httpx.RequestError as e:
-                    # Log the error but don't fail the operation
                     print(f"Failed to send callback: {str(e)}")
         except SQLAlchemyError as e:
             await self.db.rollback()

@@ -114,7 +114,6 @@ class VacancyService:
 
     async def delete_vacancy(self, vacancy_id: UUID) -> bool:
         try:
-            # Check if vacancy exists
             result = await self.db.execute(
                 select(Vacancy).where(Vacancy.id == vacancy_id)
             )

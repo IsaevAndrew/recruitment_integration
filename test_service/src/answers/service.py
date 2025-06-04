@@ -16,7 +16,6 @@ class AnswerOptionService:
 
     async def create_answer_option(self, data: AnswerOptionCreate) -> AnswerOptionRead:
         try:
-            # Check if question exists
             question_result = await self.db.execute(
                 select(Question).where(Question.id == data.question_id)
             )
